@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Starlight Twinkle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Starlight">
+<meta name="theme-color" content="#0b0e1f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-column phone console — sky preview on top, controls in a tabbed deck below, sticky connect bar. Single dark look on purpose: it's used inside a car at night. */
+:root{
+  --night:#0b0e1f; --panel:#141834; --panel-2:#1c2147; --line:#2a3062;
+  --ink:#e9ebff; --muted:#9aa0cf; --star:#ffd98a; --star-deep:#f0b54a;
+  --good:#6fe3b0; --warn:#ffb36b; --bad:#ff6f8a;
+  --f-display:"Sora","Avenir Next",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:14px;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{background:var(--night);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.45;min-height:100%;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--night)}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px;display:flex;flex-direction:column;gap:14px}
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--night) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;gap:10px;padding-block:8px;margin-inline:-4px;padding-inline:4px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.01em;flex:1;min-width:0}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.02em}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--star);outline-offset:2px}
+.btn{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-weight:600;font-size:14px;white-space:nowrap}
+.btn.primary{background:var(--star);color:#231a05;border-color:transparent}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
+.power{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--panel-2);border:1px solid var(--line)}
+.power svg{width:22px;height:22px}
+.power[aria-pressed="true"]{background:var(--star);color:#231a05;border-color:transparent;box-shadow:0 0 22px -4px var(--star)}
+
+.sky-wrap{position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:#05060f;aspect-ratio:16/10;max-width:100%}
+#sky{width:100%;height:100%;display:block}
+.sky-tag{position:absolute;left:12px;bottom:10px;font-family:var(--f-mono);font-size:11px;color:var(--muted);background:#05060fcc;padding:3px 8px;border-radius:6px;letter-spacing:.03em}
+.sky-meter{position:absolute;right:12px;bottom:10px;display:flex;gap:4px;align-items:flex-end;height:34px}
+.sky-meter i{display:block;width:6px;border-radius:3px;background:var(--star);height:50%}
+
+.banner{border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--night));color:var(--ink);border-radius:var(--r);padding:12px 14px;font-size:14px}
+.banner b{color:var(--warn)}
+
+.devices{display:flex;flex-direction:column;gap:8px}
+.dev{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+.dot.on{background:var(--good);box-shadow:0 0 10px var(--good)}
+.dot.busy{background:var(--warn)}
+.dev .meta{flex:1;min-width:0}
+.dev .meta b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev .meta span{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:4px 2px}
+
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px}
+.tabs button{border-radius:999px;padding:9px 4px;font-weight:600;font-size:13.5px;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--panel-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:16px}
+.panel h2{font-family:var(--f-display);font-size:16px;font-weight:600;margin:0;text-wrap:balance}
+.panel p.hint{margin:-8px 0 0;color:var(--muted);font-size:13.5px}
+.label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.label output{font-family:var(--f-mono);letter-spacing:0;text-transform:none;color:var(--ink);font-variant-numeric:tabular-nums}
+.field{display:flex;flex-direction:column;gap:8px}
+input[type=range]{width:100%;accent-color:var(--star);height:28px}
+.swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.sw{aspect-ratio:1;border-radius:50%;border:2px solid transparent;max-width:100%}
+.sw[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--night) inset}
+#wheel{width:100%;max-width:260px;aspect-ratio:1;align-self:center;touch-action:none;border-radius:50%;cursor:crosshair}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chips{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.chip{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.chip b{font-weight:600}
+.chip span{font-size:12.5px;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--star);background:color-mix(in srgb,var(--star) 12%,var(--panel-2))}
+.chip[aria-pressed="true"] b{color:var(--star)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.switch{width:52px;height:30px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);position:relative;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--muted);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--star)}
+.switch[aria-checked="true"]::after{transform:translateX(22px);background:#231a05}
+select,input[type=text],textarea{font:inherit;font-family:var(--f-mono);font-size:13px;background:var(--night);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%;min-width:0;box-sizing:border-box}
+textarea{min-height:70px;resize:vertical}
+.log{font-family:var(--f-mono);font-size:11.5px;background:#05060f;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--muted)}
+.log .tx{color:var(--star)} .log .rx{color:var(--good)} .log .er{color:var(--bad)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2>*{min-width:0}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--line);padding:10px 16px;border-radius:999px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){.switch::after{transition:none}}
+</style>
+</head><body>
+
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">Starlight<small id="status">Not connected</small></div>
+    <button class="btn primary" id="connectBtn">Connect</button>
+    <button class="power" id="powerBtn" aria-pressed="true" aria-label="Power">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>
+    </button>
+  </header>
+
+  <div class="banner" id="btBanner" hidden></div>
+
+  <div class="sky-wrap">
+    <canvas id="sky" aria-label="Live preview of your headliner"></canvas>
+    <div class="sky-tag" id="skyTag">PREVIEW · STATIC</div>
+    <div class="sky-meter" id="meter" aria-hidden="true"></div>
+  </div>
+
+  <div class="devices" id="devices"></div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-color" aria-selected="true" data-tab="color">Colour</button>
+    <button role="tab" id="tab-twinkle" aria-selected="false" data-tab="twinkle">Twinkle</button>
+    <button role="tab" id="tab-modes" aria-selected="false" data-tab="modes">Modes</button>
+    <button role="tab" id="tab-device" aria-selected="false" data-tab="device">Device</button>
+  </div>
+
+  <!-- COLOUR -->
+  <section class="panel" data-panel="color">
+    <h2>Star colour</h2>
+    <canvas id="wheel" width="520" height="520" aria-label="Colour wheel"></canvas>
+    <div class="swatches" id="swatches"></div>
+    <div class="field">
+      <div class="label">Brightness <output id="briOut">80%</output></div>
+      <input type="range" id="bri" min="1" max="100" value="80">
+    </div>
+    <div class="field">
+      <div class="label">White channel (RGBW kits) <output id="whiteOut">0%</output></div>
+      <input type="range" id="white" min="0" max="100" value="0">
+    </div>
+  </section>
+
+  <!-- TWINKLE -->
+  <section class="panel" data-panel="twinkle" hidden>
+    <div class="toggle">
+      <div><h2>Twinkle Lab</h2></div>
+      <button class="switch" id="twOn" role="switch" aria-checked="false" aria-label="Twinkle on"></button>
+    </div>
+    <p class="hint">Instead of the box's smooth fade, your phone sends random flickers. Each one starts at a random time with its own depth and length, so the sky never pulses on a beat. With two or more controllers connected, each one twinkles on its own clock.</p>
+    <button class="btn" id="testFlash" style="align-self:flex-start">Test flash</button>
+    <div class="chips" id="twStyles"></div>
+    <div class="field">
+      <div class="label">How often <output id="densOut"></output></div>
+      <input type="range" id="dens" min="1" max="100" value="45">
+    </div>
+    <div class="field">
+      <div class="label">Depth of each flicker <output id="depthOut"></output></div>
+      <input type="range" id="depth" min="5" max="100" value="55">
+    </div>
+    <div class="field">
+      <div class="label">Speed <output id="spdOut"></output></div>
+      <input type="range" id="spd" min="1" max="100" value="50">
+    </div>
+    <div class="field">
+      <div class="label">Colour drift <output id="driftOut"></output></div>
+      <input type="range" id="drift" min="0" max="100" value="0">
+    </div>
+    <details>
+      <summary>Bluetooth send rate</summary>
+      <div class="field" style="margin-top:12px">
+        <div class="label">Updates per second <output id="hzOut"></output></div>
+        <input type="range" id="hz" min="4" max="30" value="14">
+        <p class="hint" style="margin:0">Higher looks smoother. If the lights lag or the connection drops, lower it.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- MODES -->
+  <section class="panel" data-panel="modes" hidden>
+    <h2>Built-in modes</h2>
+    <p class="hint">These run inside the light box itself, like the MOLED app's mode list. They turn Twinkle Lab off.</p>
+    <div class="chips" id="hwModes"></div>
+    <div class="field">
+      <div class="label">Mode speed <output id="mspdOut">50%</output></div>
+      <input type="range" id="mspd" min="1" max="100" value="50">
+    </div>
+    <div class="toggle">
+      <div><h2>Music</h2><p class="hint" style="margin:4px 0 0">Stars pulse with sound from your phone's mic.</p></div>
+      <button class="switch" id="micOn" role="switch" aria-checked="false" aria-label="Music mode"></button>
+    </div>
+  </section>
+
+  <!-- DEVICE -->
+  <section class="panel" data-panel="device" hidden>
+    <h2>Controller</h2>
+    <div class="field">
+      <div class="label">Protocol</div>
+      <select id="proto">
+        <option value="auto">Auto-detect</option>
+        <option value="yx">YX_LED fiber light (FFB0)</option>
+        <option value="elk">ELK-BLEDOM / MELK (FFF0)</option>
+        <option value="triones">Triones / Happy Lighting (FFD5)</option>
+        <option value="hm10">Generic HM-10 (FFE0, Triones bytes)</option>
+        <option value="custom">Custom (templates below)</option>
+      </select>
+      <p class="hint" style="margin:0">Leave on Auto-detect. If the stars don't respond, try each option and see which one changes the colour.</p>
+    </div>
+    <details id="customBox">
+      <summary>Custom protocol</summary>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        <div class="grid2">
+          <div class="field"><div class="label">Service UUID</div><input type="text" id="cSvc" placeholder="0000fff0-0000-1000-8000-00805f9b34fb"></div>
+          <div class="field"><div class="label">Write char UUID</div><input type="text" id="cChr" placeholder="0000fff3-0000-1000-8000-00805f9b34fb"></div>
+        </div>
+        <div class="field"><div class="label">Colour template</div><input type="text" id="cColor" value="7e 00 05 03 {r} {g} {b} 00 ef"></div>
+        <div class="grid2">
+          <div class="field"><div class="label">On</div><input type="text" id="cOn" value="7e 00 04 f0 00 01 ff 00 ef"></div>
+          <div class="field"><div class="label">Off</div><input type="text" id="cOff" value="7e 00 04 00 00 00 ff 00 ef"></div>
+        </div>
+        <p class="hint" style="margin:0">Placeholders: {r} {g} {b} {w} as 00–ff, {v} brightness 00–64.</p>
+      </div>
+    </details>
+    <h2>Motor finder</h2>
+    <div class="field">
+      <p class="hint" style="margin:0">Looks for a hidden twinkle wheel, meteor or mode switch in a YX_LED box. Press <b>Auto scan</b> and watch the roof. If the stars start twinkling on their own, spinning, or changing, press <b>That did it!</b> right away.</p>
+      <div class="row">
+        <button class="btn small" id="mfBack">‹</button>
+        <span id="mfInfo" style="min-width:150px;text-align:center;font-variant-numeric:tabular-nums">Byte 2 = 00</span>
+        <button class="btn small" id="mfNext">›</button>
+        <button class="btn small" id="mfSend">Send</button>
+      </div>
+      <div class="row">
+        <button class="btn small" id="mfScan">Auto scan</button>
+        <button class="btn" id="mfHit">That did it!</button>
+        <button class="btn small" id="mfReset">Reset box</button>
+      </div>
+      <div id="mfHits" class="hint" style="margin:0"></div>
+    </div>
+    <div class="field">
+      <div class="label">Send raw bytes (hex)</div>
+      <div class="row" style="flex-wrap:nowrap"><input type="text" id="raw" placeholder="7e 00 05 03 ff 00 00 00 ef"><button class="btn small" id="rawSend">Send</button></div>
+    </div>
+    <div class="row">
+      <button class="btn small" id="inspectBtn">Read services</button>
+      <button class="btn small" id="copyLog">Copy log</button>
+      <button class="btn small" id="clearLog">Clear</button>
+    </div>
+    <div class="log" id="log" aria-live="polite"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const hex2 = n => n.toString(16).padStart(2,"0");
+const uuid16 = n => `0000${n.toString(16).padStart(4,"0")}-0000-1000-8000-00805f9b34fb`;
+
+/* ---------- saved settings (per phone) ---------- */
+const DEF = {r:255,g:217,b:138,bri:80,white:0,on:true,tw:false,style:"scintillate",dens:45,depth:55,spd:50,drift:0,hz:14,proto:"auto",mspd:50,
+  cSvc:"",cChr:"",cColor:"7e 00 05 03 {r} {g} {b} 00 ef",cOn:"7e 00 04 f0 00 01 ff 00 ef",cOff:"7e 00 04 00 00 00 ff 00 ef"};
+let S = {...DEF};
+try { Object.assign(S, JSON.parse(localStorage.getItem("starlight.v1") || "{}")); } catch(e){}
+const save = () => { try { localStorage.setItem("starlight.v1", JSON.stringify(S)); } catch(e){} };
+
+/* ---------- log ---------- */
+const logEl = $("#log");
+function log(msg, cls=""){
+  const line = document.createElement("div");
+  if (cls) line.className = cls;
+  line.textContent = `${new Date().toLocaleTimeString([], {hour12:false})}  ${msg}`;
+  logEl.append(line);
+  while (logEl.childNodes.length > 300) logEl.firstChild.remove();
+  logEl.scrollTop = logEl.scrollHeight;
+}
+let toastT;
+function toast(t){ const el=$("#toast"); el.textContent=t; el.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>el.hidden=true,2600); }
+
+/* ---------- protocols ----------
+   Most car star-light boxes sold with MOLED / My SmartLED style apps use one of
+   these byte layouts. Auto-detect picks one from the services the box exposes. */
+const PROTOCOLS = {
+  elk: {
+    name:"ELK-BLEDOM", svc:uuid16(0xfff0), chr:uuid16(0xfff3),
+    on:  () => [0x7e,0x00,0x04,0xf0,0x00,0x01,0xff,0x00,0xef],
+    off: () => [0x7e,0x00,0x04,0x00,0x00,0x00,0xff,0x00,0xef],
+    color:(r,g,b) => [0x7e,0x00,0x05,0x03,r,g,b,0x00,0xef],
+    white:(w) => [0x7e,0x00,0x05,0x02,w,0x00,0x00,0x00,0xef],
+    bright:(p) => [0x7e,0x00,0x01,clamp(p,0,100),0x00,0x00,0x00,0x00,0xef],
+    mode:(m) => [0x7e,0x00,0x03,m,0x03,0x00,0x00,0x00,0xef],
+    speed:(p) => [0x7e,0x00,0x02,clamp(p,0,100),0x00,0x00,0x00,0x00,0xef],
+    modes:{jump3:0x87,jump7:0x88,fade3:0x89,fade7:0x8a,strobe7:0x95,breathe:0x8c}
+  },
+  triones: {
+    name:"Triones", svc:uuid16(0xffd5), chr:uuid16(0xffd9),
+    on:  () => [0xcc,0x23,0x33],
+    off: () => [0xcc,0x24,0x33],
+    color:(r,g,b) => [0x56,r,g,b,0x00,0xf0,0xaa],
+    white:(w) => [0x56,0x00,0x00,0x00,w,0x0f,0xaa],
+    mode:(m,sp) => [0xbb,m,sp,0x44],
+    modes:{jump3:0x37,jump7:0x38,fade3:0x26,fade7:0x25,strobe7:0x30,breathe:0x2a}
+  }
+};
+PROTOCOLS.hm10 = {...PROTOCOLS.triones, name:"HM-10", svc:uuid16(0xffe0), chr:uuid16(0xffe1)};
+/* YX_LED fiber light boxes: service FFB0, write FFB1, one 20-byte "full state" packet
+   a5 [power ff/00] 01 06 02 [R G B] ... aa. On/off packet confirmed by a Home Assistant
+   user with the same box; bytes 5-7 as colour is our best reading of it (ff db a4 = warm white). */
+const YX_BASE = [0xa5,0xff,0x01,0x06,0x02,0xff,0xdb,0xa4,0x00,0x39,0x00,0xff,0x05,0xff,0x01,0xff,0x01,0x05,0x00,0xaa];
+const yxPacket = (on, rgb) => { const p = [...YX_BASE]; p[1] = on ? 0xff : 0x00; if (rgb){ p[5]=rgb[0]; p[6]=rgb[1]; p[7]=rgb[2]; } return p; };
+PROTOCOLS.yx = {
+  name:"YX_LED", svc:uuid16(0xffb0), chr:uuid16(0xffb1), repeat:true,
+  on:  () => yxPacket(true, scaled(1)),
+  off: () => yxPacket(false, scaled(1)),
+  color:(r,g,b) => yxPacket(true, [r,g,b]),
+  modes:{}
+};
+const OPTIONAL_SERVICES = [0xfff0,0xffd5,0xffd0,0xffe0,0xffe5,0xff00,0xffb0,0xfee7,0xae00,0x1910].map(uuid16);
+
+function parseHex(str, vars={}){
+  const filled = str.replace(/\{(\w)\}/g, (_,k) => hex2(clamp(Math.round(vars[k] ?? 0),0,255)));
+  const parts = filled.replace(/0x/gi,"").trim().split(/[\s,:-]+/).filter(Boolean);
+  const out = parts.map(p => parseInt(p,16));
+  if (!out.length || out.some(n => Number.isNaN(n) || n<0 || n>255)) throw new Error("Bytes must be hex pairs like 7e 00 ef");
+  return out;
+}
+function customProto(){
+  return {
+    name:"Custom", svc:S.cSvc.trim().toLowerCase(), chr:S.cChr.trim().toLowerCase(),
+    on:()=>parseHex(S.cOn), off:()=>parseHex(S.cOff),
+    color:(r,g,b,w,v)=>parseHex(S.cColor,{r,g,b,w,v}), modes:{}
+  };
+}
+
+/* ---------- devices ---------- */
+const devices = []; // {dev, chr, proto, busy, last, tw}
+const hasBT = !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
+let lastError = "";
+
+function renderDevices(){
+  const box = $("#devices"); box.replaceChildren();
+  if (!devices.length){
+    const p = document.createElement("div"); p.className="empty";
+    p.textContent = lastError ? `Last try failed: ${lastError}` : hasBT ? "No light box connected. Turn the stars on, then tap Connect." : "Preview mode: the sky above shows what your settings will look like.";
+    if (lastError) p.style.color = "var(--bad)";
+    box.append(p);
+  }
+  devices.forEach((d,i) => {
+    const row = document.createElement("div"); row.className="dev";
+    const dot = document.createElement("span"); dot.className = "dot " + (d.chr ? "on" : "busy");
+    const meta = document.createElement("div"); meta.className="meta";
+    const b = document.createElement("b"); b.textContent = d.dev.name || `Light box ${i+1}`;
+    const s = document.createElement("span"); s.textContent = d.chr ? `${d.proto.name} · twinkle clock ${i+1}` : "connecting…";
+    meta.append(b,s);
+    const x = document.createElement("button"); x.className="btn small"; x.textContent="Disconnect";
+    x.onclick = () => { try{ d.dev.gatt.disconnect(); }catch(e){} };
+    row.append(dot,meta,x); box.append(row);
+  });
+  $("#status").textContent = devices.filter(d=>d.chr).length ? `${devices.filter(d=>d.chr).length} connected` : (hasBT ? "Not connected" : "Preview mode");
+  $("#connectBtn").textContent = devices.length ? "Add box" : "Connect";
+  buildMeter();
+}
+
+async function connect(){
+  if (!hasBT){ showBTHelp(true); return; }
+  let dev;
+  $("#status").textContent = "Opening Bluetooth list…";
+  log("Opening Bluetooth list…");
+  try {
+    dev = await navigator.bluetooth.requestDevice({acceptAllDevices:true, optionalServices:OPTIONAL_SERVICES});
+  } catch(e){
+    lastError = `choosing the box (${e.name}: ${e.message})`;
+    log("Choose failed: "+e.name+": "+e.message,"er"); renderDevices(); return;
+  }
+  lastError = "";
+  if (devices.some(d => d.dev.id === dev.id)) { toast("That box is already connected"); return; }
+  const d = {dev, chr:null, proto:null, busy:false, last:"", tw:newTwinkleState()};
+  devices.push(d); renderDevices();
+  dev.addEventListener("gattserverdisconnected", () => {
+    log(`${dev.name||"device"} disconnected`,"er");
+    const i = devices.indexOf(d); if (i>=0) devices.splice(i,1);
+    renderDevices();
+  });
+  try {
+    log(`Connecting to ${dev.name||dev.id}…`);
+    $("#status").textContent = `Connecting to ${dev.name||"box"}…`;
+    let server, lastErr;
+    for (let i = 1; i <= 3 && !server; i++){
+      try { server = await dev.gatt.connect(); }
+      catch(e){ lastErr = e; log(`Try ${i} failed: ${e.message}`,"er"); await new Promise(r=>setTimeout(r,700)); }
+    }
+    if (!server) throw new Error((lastErr && lastErr.message || "no answer") + ". Close the MOLED app on every phone, then try again.");
+    await pickCharacteristic(d, server);
+    log(`Ready: ${d.proto.name} on ${d.chr.uuid}`,"rx");
+    toast(`Connected to ${dev.name||"light box"}`);
+    renderDevices();
+    await pushState(d);
+  } catch(e){
+    lastError = `connecting to ${dev.name||"the box"} (${e.message})`;
+    log("Connect failed: "+e.message,"er");
+    toast("Couldn't connect. The reason is under the sky picture.");
+    try{ dev.gatt.disconnect(); }catch(_){}
+  }
+}
+
+async function pickCharacteristic(d, server){
+  const order = S.proto === "auto" ? ["yx","elk","triones","hm10"] : [S.proto];
+  for (const key of order){
+    const p = key === "custom" ? customProto() : PROTOCOLS[key];
+    if (!p.svc || !p.chr) continue;
+    try {
+      const svc = await server.getPrimaryService(p.svc);
+      d.chr = await svc.getCharacteristic(p.chr);
+      d.proto = p; return;
+    } catch(e){ /* not this one */ }
+  }
+  // fallback: first writable characteristic we can see
+  const svcs = await server.getPrimaryServices().catch(()=>[]);
+  for (const svc of svcs){
+    const chars = await svc.getCharacteristics().catch(()=>[]);
+    for (const c of chars){
+      if (c.properties.writeWithoutResponse || c.properties.write){
+        d.chr = c; d.proto = PROTOCOLS.elk;
+        log(`No known layout matched. Using writable ${c.uuid} with ELK bytes. Try another protocol if nothing changes.`,"er");
+        return;
+      }
+    }
+  }
+  throw new Error("No writable characteristic found");
+}
+
+async function write(d, bytes, force=false){
+  if (!d.chr) return;
+  const key = bytes.join(",");
+  if (!force && key === d.last) return;
+  if (d.busy) return; // drop frame rather than queue up lag
+  d.busy = true;
+  try {
+    const buf = new Uint8Array(bytes);
+    if (d.chr.properties.writeWithoutResponse && d.chr.writeValueWithoutResponse) await d.chr.writeValueWithoutResponse(buf);
+    else if (d.chr.writeValueWithResponse) await d.chr.writeValueWithResponse(buf);
+    else await d.chr.writeValue(buf);
+    d.last = key; d.sent = (d.sent||0) + 1;
+    if (force) log("→ " + bytes.map(hex2).join(" "),"tx");
+  } catch(e){ log("Write failed: "+e.message,"er"); }
+  finally { d.busy = false; }
+}
+const writeAll = (fn, force=true) => Promise.all(devices.map(d => d.proto && write(d, fn(d.proto), force)));
+
+function scaled(level){ // level 0..1 → rgb bytes with brightness folded in
+  const k = (S.bri/100) * level;
+  return [S.r*k, S.g*k, S.b*k, (S.white/100)*255*k].map(v => clamp(Math.round(v),0,255));
+}
+async function sendColor(d, level=1, force=true){
+  if (!d.proto) return;
+  const [r,g,b,w] = scaled(level);
+  await write(d, d.proto.color(r,g,b,w,Math.round(S.bri*level)), force);
+}
+async function pushState(d){
+  await write(d, (S.on ? d.proto.on : d.proto.off)(), true);
+  if (d.proto.repeat){ await new Promise(r=>setTimeout(r,150)); await write(d, (S.on ? d.proto.on : d.proto.off)(), true); }
+  if (S.on) await sendColor(d, 1, true);
+}
+
+/* ---------- twinkle engine ----------
+   Each controller ("clock") gets its own random schedule of flicker events.
+   Events arrive at random gaps (Poisson), each with its own depth, attack and
+   decay, so dips overlap and never repeat on a beat. */
+const STYLES = {
+  scintillate:{label:"Scintillate", sub:"quick random sparkles", attack:.05, decay:.25, rate:1.0, up:.35, jitter:.06},
+  shimmer:    {label:"Shimmer", sub:"soft, constant shiver", attack:.2, decay:.5, rate:1.6, up:.15, jitter:.1},
+  wink:       {label:"Wink", sub:"rare deep blinks", attack:.04, decay:.12, rate:.35, up:0, jitter:.0},
+  candle:     {label:"Candle", sub:"warm, uneven flicker", attack:.08, decay:.18, rate:2.2, up:.1, jitter:.14},
+  heartbeat:  {label:"Slow breath", sub:"long random swells", attack:1.2, decay:1.8, rate:.25, up:.2, jitter:.02},
+  meteor:     {label:"Meteor", sub:"dark sky, sudden flashes", attack:.03, decay:.6, rate:.4, up:1, jitter:0, base:.25}
+};
+function newTwinkleState(){ return {events:[], next:0, noise:0, hueOff:0}; }
+function rand(a,b){ return a + Math.random()*(b-a); }
+
+function twinkleLevel(tw, t){
+  const st = STYLES[S.style] || STYLES.scintillate;
+  const spd = Math.pow(2, (S.spd-50)/25);          // 0.25x … 4x
+  const rate = st.rate * Math.pow(S.dens/45, 1.3) * spd; // events per second
+  const depth = S.depth/100;
+  if (t >= tw.next){
+    const up = Math.random() < st.up;
+    // slow boxes (few updates/s) need each flicker to span a few updates or it gets skipped
+    const fr = devices.length && boxRate > 0 ? boxRate : 30;
+    tw.events.push({t0:t, a:Math.max(st.attack*rand(.5,1.6)/spd, 1.2/fr), d:Math.max(st.decay*rand(.5,1.8)/spd, 2.5/fr),
+      amp:(up ? +1 : -1) * depth * rand(.35,1)});
+    tw.next = t - Math.log(1-Math.random())/Math.max(rate,.01);
+  }
+  const base = st.base != null ? st.base + (1-st.base)*(1-depth) : 1 - depth*0.15;
+  let lvl = base;
+  tw.events = tw.events.filter(e => t - e.t0 < e.a + e.d);
+  for (const e of tw.events){
+    const x = t - e.t0;
+    const env = x < e.a ? x/e.a : Math.exp(-3*(x-e.a)/e.d);
+    lvl += e.amp * env * (e.amp > 0 ? (1-base+.3) : base);
+  }
+  // fine jitter is invisible on a slow box and only wastes its few updates
+  tw.noise += (rand(-1,1)*st.jitter*(boxRate && boxRate < 10 ? 0 : 1) - tw.noise*.3);
+  lvl += tw.noise;
+  return clamp(lvl, 0.02, 1);
+}
+
+/* preview-only clocks used when nothing is connected, so the sky still shows two */
+const previewClocks = [newTwinkleState(), newTwinkleState()];
+let levels = [1,1];
+let lastSend = 0;
+
+function hueShift(r,g,b,deg){
+  // rotate hue for colour drift
+  const a = deg*Math.PI/180, c=Math.cos(a), s=Math.sin(a);
+  const m = [.213+c*.787-s*.213,.715-c*.715-s*.715,.072-c*.072+s*.928,
+             .213-c*.213+s*.143,.715+c*.285+s*.140,.072-c*.072-s*.283,
+             .213-c*.213-s*.787,.715-c*.715+s*.715,.072+c*.928+s*.072];
+  return [r*m[0]+g*m[1]+b*m[2], r*m[3]+g*m[4]+b*m[5], r*m[6]+g*m[7]+b*m[8]].map(v=>clamp(Math.round(v),0,255));
+}
+
+/* ---------- music (mic) ---------- */
+let mic = null;
+async function startMic(){
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const an = ctx.createAnalyser(); an.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(an);
+    mic = {ctx, an, stream, buf:new Uint8Array(an.frequencyBinCount), env:0, avg:.1};
+    return true;
+  } catch(e){ log("Mic not available here: "+e.message,"er"); toast("This page can't use the mic here"); return false; }
+}
+function stopMic(){ if (!mic) return; mic.stream.getTracks().forEach(t=>t.stop()); mic.ctx.close(); mic=null; }
+function micLevel(){
+  mic.an.getByteFrequencyData(mic.buf);
+  let sum=0; for (let i=2;i<40;i++) sum+=mic.buf[i];
+  const v = sum/(38*255);
+  mic.avg = mic.avg*.98 + v*.02;
+  const hit = clamp((v - mic.avg*.9)/(mic.avg+.05),0,1);
+  mic.env = Math.max(hit, mic.env*.85);
+  return clamp(.15 + mic.env*.85, 0, 1);
+}
+
+/* ---------- sky preview ---------- */
+const sky = $("#sky"), sctx = sky.getContext("2d");
+let stars = [];
+function layoutSky(){
+  const dpr = Math.min(devicePixelRatio||1, 2);
+  const w = sky.clientWidth, h = sky.clientHeight;
+  sky.width = w*dpr; sky.height = h*dpr; sctx.setTransform(dpr,0,0,dpr,0,0);
+  const n = Math.round(w*h/900);
+  stars = Array.from({length:n}, () => ({
+    x:Math.random()*w, y:Math.random()*h, s:rand(.5,1.9),
+    ch:Math.random() < .5 ? 0 : 1,                 // which controller/port lights this fibre
+    wheel:rand(0,Math.PI*2), wheelRate:rand(.3,1.4) // fibre-end variation, like a twinkle wheel
+  }));
+}
+function drawSky(t){
+  const w = sky.clientWidth, h = sky.clientHeight;
+  const g = sctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,"#070816"); g.addColorStop(1,"#0d1026");
+  sctx.fillStyle = g; sctx.fillRect(0,0,w,h);
+  const nCh = Math.max(1, Math.min(2, devices.length || 2));
+  for (const st of stars){
+    const ch = devices.length === 1 ? 0 : st.ch;
+    const lvl = S.on ? levels[Math.min(ch, levels.length-1)] * (S.bri/100) : 0;
+    const wheel = .75 + .25*Math.sin(st.wheel + t*st.wheelRate);
+    const a = clamp(lvl * wheel, 0, 1);
+    if (a < .01) continue;
+    let [r,gg,b] = currentRGB(ch);
+    const wv = S.white/100; r = r+(255-r)*wv*.6; gg = gg+(255-gg)*wv*.6; b = b+(255-b)*wv*.6;
+    sctx.fillStyle = `rgba(${r|0},${gg|0},${b|0},${a})`;
+    sctx.beginPath(); sctx.arc(st.x, st.y, st.s*(.7+.5*a), 0, Math.PI*2); sctx.fill();
+    if (st.s > 1.5 && a > .5){
+      sctx.fillStyle = `rgba(${r|0},${gg|0},${b|0},${a*.18})`;
+      sctx.beginPath(); sctx.arc(st.x, st.y, st.s*4, 0, Math.PI*2); sctx.fill();
+    }
+  }
+  void nCh;
+}
+let driftDeg = [0,0];
+function currentRGB(ch){
+  if (!S.tw || !S.drift) return [S.r,S.g,S.b];
+  return hueShift(S.r,S.g,S.b, driftDeg[ch % 2] || 0);
+}
+
+function buildMeter(){
+  const m = $("#meter"); m.replaceChildren();
+  const n = devices.length || 2;
+  for (let i=0;i<n;i++) m.append(document.createElement("i"));
+}
+
+/* ---------- main loop ---------- */
+let hwMode = null, rateN = 0, rateT = 0, testing = false, boxRate = 0;
+async function testFlash(){
+  if (!devices.length){ toast("Connect your light box first"); return; }
+  if (S.tw) setTwinkle(false);
+  testing = true; toast("Watch the roof: 6 bright / dim flashes");
+  for (let i = 0; i < 12; i++){
+    for (const d of devices) await sendColor(d, i % 2 ? 0.08 : 1, true);
+    await new Promise(r => setTimeout(r, 450));
+  }
+  for (const d of devices) await sendColor(d, 1, true);
+  testing = false;
+}
+function frame(ms){
+  const t = ms/1000;
+  const clocks = devices.length ? devices.map(d=>d.tw) : previewClocks;
+  if (!S.on){ levels = clocks.map(()=>0); }
+  else if (mic){ const v = micLevel(); levels = clocks.map(()=>v); }
+  else if (S.tw){
+    levels = clocks.map(c => twinkleLevel(c, t));
+    if (S.drift) clocks.forEach((c,i) => { driftDeg[i] = Math.sin(t*.07*(1+i*.37) + i*2) * S.drift * 1.2; });
+  }
+  else levels = clocks.map(()=>1);
+
+  drawSky(t);
+  $$("#meter i").forEach((el,i) => el.style.height = `${8 + 26*(levels[i] ?? 0)}px`);
+  $("#skyTag").textContent = !S.on ? "PREVIEW · OFF" : mic ? "PREVIEW · MUSIC" : S.tw ? `PREVIEW · ${STYLES[S.style].label.toUpperCase()}` : hwMode ? `BOX MODE · ${hwMode.toUpperCase()}` : "PREVIEW · STATIC";
+
+  const live = S.on && (S.tw || mic) && devices.length;
+  if (devices.length && ms - rateT > 1000){
+    const n = devices.reduce((a,d)=>a+(d.sent||0),0), rate = Math.round((n - rateN)*1000/(ms - rateT));
+    rateN = n; rateT = ms;
+    if (live && rate > 0) boxRate = boxRate ? boxRate*.6 + (rate/devices.length)*.4 : rate/devices.length;
+    const c = devices.filter(d=>d.chr).length;
+    if (c) $("#status").textContent = live ? `${c} connected · ${rate} updates/s reaching the box` : `${c} connected`;
+  }
+  if (live && ms - lastSend > 1000/S.hz){
+    lastSend = ms;
+    devices.forEach((d,i) => {
+      if (!d.proto) return;
+      const lvl = levels[i] ?? 1;
+      const [r,g,b] = currentRGB(i);
+      const k = (S.bri/100)*lvl;
+      const bytes = d.proto.color(...[r*k,g*k,b*k,(S.white/100)*255*k].map(v=>clamp(Math.round(v),0,255)), Math.round(S.bri*lvl));
+      write(d, bytes, false);
+    });
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- UI wiring ---------- */
+function bindRange(id, key, fmt, onChange){
+  const el = $("#"+id), out = $("#"+id+"Out");
+  el.value = S[key];
+  const upd = () => { S[key] = +el.value; if (out) out.textContent = fmt(S[key]); save(); onChange && onChange(); };
+  el.addEventListener("input", upd); if (out) out.textContent = fmt(S[key]);
+}
+const pct = v => v+"%";
+const debounce = (fn, ms) => { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; };
+const sendStaticColor = debounce(() => { if (!S.tw && !mic) devices.forEach(d => sendColor(d,1,true)); hwMode=null; }, 60);
+
+bindRange("bri","bri",pct, sendStaticColor);
+bindRange("white","white",pct, () => { sendStaticColor(); });
+bindRange("dens","dens",v => v<25?"rare":v<60?"often":"constant");
+bindRange("depth","depth",pct);
+bindRange("spd","spd",v => (Math.pow(2,(v-50)/25)).toFixed(2)+"×");
+bindRange("drift","drift",v => v ? "±"+Math.round(v*1.2)+"°" : "off");
+bindRange("hz","hz",v => v+"/s");
+bindRange("mspd","mspd",pct, debounce(() => { if (hwMode) runHwMode(hwMode); }, 120));
+
+// swatches
+const SW = [["Starlight","#ffd98a"],["Ice","#cfe6ff"],["White","#ffffff"],["Violet","#9b6bff"],["Blue","#2f6bff"],["Teal","#22d3c5"],["Red","#ff2d3a"],["Rose","#ff6fb5"]];
+const swBox = $("#swatches");
+SW.forEach(([n,c]) => {
+  const b = document.createElement("button"); b.className="sw"; b.style.background=c; b.setAttribute("aria-label",n); b.title=n;
+  b.onclick = () => { setRGB(...[1,3,5].map(i=>parseInt(c.slice(i,i+2),16))); };
+  swBox.append(b);
+});
+function markSwatch(){
+  const cur = "#"+[S.r,S.g,S.b].map(hex2).join("");
+  $$(".sw").forEach((b,i) => b.setAttribute("aria-pressed", SW[i][1] === cur ? "true":"false"));
+}
+function setRGB(r,g,b){ S.r=r; S.g=g; S.b=b; save(); markSwatch(); drawWheel(); sendStaticColor(); }
+
+// colour wheel
+const wheel = $("#wheel"), wctx = wheel.getContext("2d");
+const wheelImg = (() => {
+  const W = wheel.width, R = W/2, img = wctx.createImageData(W,W);
+  for (let y=0;y<W;y++) for (let x=0;x<W;x++){
+    const dx=x-R, dy=y-R, d=Math.hypot(dx,dy)/R; const i=(y*W+x)*4;
+    if (d>1){ img.data[i+3]=0; continue; }
+    const [r,g,b] = hsv2rgb((Math.atan2(dy,dx)/Math.PI*180+360)%360, d, 1);
+    img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]= d>.985 ? (1-d)/.015*255 : 255;
+  }
+  return img;
+})();
+function hsv2rgb(h,s,v){ const f=n=>{const k=(n+h/60)%6; return v - v*s*Math.max(0,Math.min(k,4-k,1));}; return [f(5)*255,f(3)*255,f(1)*255].map(Math.round); }
+function rgb2hs(r,g,b){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; let h=0;
+  if (d){ h = mx===r ? ((g-b)/d)%6 : mx===g ? (b-r)/d+2 : (r-g)/d+4; h*=60; if (h<0) h+=360; }
+  return [h, mx ? d/mx : 0]; }
+function drawWheel(){
+  wctx.putImageData(wheelImg,0,0);
+  const R = wheel.width/2, [h,s] = rgb2hs(S.r,S.g,S.b), a = h*Math.PI/180;
+  const x = R + Math.cos(a)*s*R, y = R + Math.sin(a)*s*R;
+  wctx.lineWidth = 6; wctx.strokeStyle = "#0b0e1f"; wctx.beginPath(); wctx.arc(x,y,18,0,7); wctx.stroke();
+  wctx.lineWidth = 3; wctx.strokeStyle = "#ffffff"; wctx.beginPath(); wctx.arc(x,y,18,0,7); wctx.stroke();
+}
+function pickWheel(ev){
+  const rect = wheel.getBoundingClientRect();
+  const dx = (ev.clientX-rect.left)/rect.width*2-1, dy = (ev.clientY-rect.top)/rect.height*2-1;
+  const s = Math.min(1, Math.hypot(dx,dy)), h = (Math.atan2(dy,dx)/Math.PI*180+360)%360;
+  setRGB(...hsv2rgb(h,s,1));
+}
+let dragging=false;
+wheel.addEventListener("pointerdown", e => { dragging=true; wheel.setPointerCapture(e.pointerId); pickWheel(e); });
+wheel.addEventListener("pointermove", e => dragging && pickWheel(e));
+wheel.addEventListener("pointerup", () => dragging=false);
+
+// twinkle styles
+const twBox = $("#twStyles");
+Object.entries(STYLES).forEach(([k,v]) => {
+  const b = document.createElement("button"); b.className="chip"; b.dataset.k=k;
+  const t1=document.createElement("b"); t1.textContent=v.label; const t2=document.createElement("span"); t2.textContent=v.sub;
+  b.append(t1,t2);
+  b.onclick = () => { S.style=k; save(); markStyles(); if (!S.tw) setTwinkle(true); };
+  twBox.append(b);
+});
+function markStyles(){ $$("#twStyles .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.k===S.style ? "true":"false")); }
+function setTwinkle(on){
+  S.tw = on; save(); $("#twOn").setAttribute("aria-checked", on?"true":"false");
+  if (on){ hwMode=null; if (mic) setMic(false); if (!S.on) setPower(true); }
+  else { driftDeg=[0,0]; devices.forEach(d => sendColor(d,1,true)); }
+}
+$("#twOn").onclick = () => setTwinkle(!S.tw);
+$("#testFlash").onclick = () => { if (!testing) testFlash(); };
+
+/* ---------- motor finder ----------
+   Steps through the unknown bytes of the YX packet (not header, power, colour or end)
+   with a few likely values so Spencer can spot which one starts a twinkle wheel/mode. */
+const MF_BYTES = [10,11,12,13,14,15,16,17,18];
+const MF_VALS  = [0x00,0x01,0x02,0x03,0x05,0x0a,0x32,0x64,0xff];
+const MF_STEPS = MF_BYTES.flatMap(b => MF_VALS.filter(v => v !== YX_BASE[b]).map(v => [b,v]));
+let mfI = 0, mfTimer = null, mfShown = null;
+let mfHits = []; try { mfHits = JSON.parse(localStorage.getItem("sl_mfhits")||"[]"); } catch(e){}
+const mfLabel = ([b,v]) => `Byte ${b} = ${hex2(v)}`;
+function mfRender(){
+  $("#mfInfo").textContent = `${mfLabel(MF_STEPS[mfI])}  (${mfI+1}/${MF_STEPS.length})`;
+  $("#mfScan").textContent = mfTimer ? "Stop scan" : "Auto scan";
+  $("#mfHits").innerHTML = mfHits.length ? "Found: <b>" + mfHits.join(", ") + "</b>. Copy the log and send it to Claude." : "";
+}
+async function mfSend(){
+  if (!devices.length){ toast("Connect your light box first"); mfStop(); return false; }
+  if (S.tw) setTwinkle(false);
+  const [b,v] = MF_STEPS[mfI]; mfShown = mfI;
+  const p = yxPacket(true, scaled(1)); p[b] = v;
+  for (const d of devices) if (d.proto) await write(d, p, true);
+  log("Motor finder: " + mfLabel([b,v]));
+  mfRender(); return true;
+}
+function mfStop(){ clearInterval(mfTimer); mfTimer = null; mfRender(); }
+async function mfReset(){ for (const d of devices) if (d.proto){ await write(d, yxPacket(true, scaled(1)), true); } }
+$("#mfBack").onclick = () => { mfStop(); mfI = (mfI - 1 + MF_STEPS.length) % MF_STEPS.length; mfSend(); };
+$("#mfNext").onclick = () => { mfStop(); mfI = (mfI + 1) % MF_STEPS.length; mfSend(); };
+$("#mfSend").onclick = () => mfSend();
+$("#mfReset").onclick = () => { mfStop(); mfReset(); toast("Sent normal settings"); };
+$("#mfScan").onclick = async () => {
+  if (mfTimer) return mfStop();
+  if (!await mfSend()) return;
+  toast("Scanning: 3 s per step. Watch the roof.");
+  mfTimer = setInterval(async () => {
+    if (mfI >= MF_STEPS.length - 1){ mfStop(); mfReset(); toast("Scan done"); return; }
+    mfI++; await mfSend();
+  }, 3000);
+  mfRender();
+};
+$("#mfHit").onclick = () => {
+  // the change may show up a moment late, so note this step and the one before
+  const i = mfShown ?? mfI, picks = [i, i-1].filter(x => x >= 0).map(x => mfLabel(MF_STEPS[x]));
+  mfStop();
+  const tag = picks.join(" or ");
+  if (!mfHits.includes(tag)) mfHits.push(tag);
+  try { localStorage.setItem("sl_mfhits", JSON.stringify(mfHits)); } catch(e){}
+  log("★ That did it: " + tag, "tx"); toast("Saved: " + tag);
+  mfRender();
+};
+mfRender();
+
+// hardware modes
+const HW = [["jump3","Jump","3 colours"],["jump7","Jump 7","7 colours"],["fade3","Fade","3 colours"],["fade7","Fade 7","7 colours"],["strobe7","Strobe","7 colours"],["breathe","Breathe","current box colour"]];
+const hwBox = $("#hwModes");
+HW.forEach(([k,l,s]) => {
+  const b = document.createElement("button"); b.className="chip"; b.dataset.k=k;
+  const t1=document.createElement("b"); t1.textContent=l; const t2=document.createElement("span"); t2.textContent=s;
+  b.append(t1,t2); b.onclick = () => runHwMode(k); hwBox.append(b);
+});
+async function runHwMode(k){
+  if (S.tw) setTwinkle(false);
+  if (mic) setMic(false);
+  hwMode = k; $$("#hwModes .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.k===k?"true":"false"));
+  if (!devices.length){ toast("Connect a light box to run its built-in modes"); return; }
+  for (const d of devices){
+    const p = d.proto; if (!p || !p.mode || p.modes[k]==null){ log(`${p?p.name:"?"} has no ${k} mode mapped`,"er"); continue; }
+    if (p === PROTOCOLS.elk){ await write(d, p.mode(p.modes[k]), true); await write(d, p.speed(S.mspd), true); }
+    else { const sp = clamp(Math.round(31 - S.mspd*.3),1,31); await write(d, p.mode(p.modes[k], sp), true); }
+  }
+}
+
+// music
+async function setMic(on){
+  if (on){ if (!(await startMic())) { $("#micOn").setAttribute("aria-checked","false"); return; } if (S.tw) setTwinkle(false); hwMode=null; }
+  else { stopMic(); devices.forEach(d=>sendColor(d,1,true)); }
+  $("#micOn").setAttribute("aria-checked", on && mic ? "true":"false");
+}
+$("#micOn").onclick = () => setMic(!mic);
+
+// power
+function setPower(on){
+  S.on = on; save(); $("#powerBtn").setAttribute("aria-pressed", on?"true":"false");
+  devices.forEach(d => d.proto && pushState(d));
+}
+$("#powerBtn").onclick = () => setPower(!S.on);
+
+// tabs
+$$(".tabs button").forEach(b => b.onclick = () => {
+  $$(".tabs button").forEach(x => x.setAttribute("aria-selected", x===b?"true":"false"));
+  $$("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== b.dataset.tab);
+  try{ localStorage.setItem("starlight.tab", b.dataset.tab); }catch(e){}
+});
+try{ const t = localStorage.getItem("starlight.tab"); if (t) $(`.tabs [data-tab="${t}"]`)?.click(); }catch(e){}
+
+// device tab
+const proto = $("#proto"); proto.value = S.proto;
+proto.onchange = () => { S.proto = proto.value; save(); toast("Reconnect the box to use this protocol"); };
+["cSvc","cChr","cColor","cOn","cOff"].forEach(id => { const el=$("#"+id); el.value=S[id]; el.addEventListener("change",()=>{S[id]=el.value; save();}); });
+$("#rawSend").onclick = async () => {
+  let bytes; try { bytes = parseHex($("#raw").value, {r:S.r,g:S.g,b:S.b,w:Math.round(S.white*2.55),v:S.bri}); } catch(e){ toast(e.message); return; }
+  if (!devices.length){ log("Not connected. Would send: "+bytes.map(hex2).join(" "),"er"); return; }
+  for (const d of devices) await write(d, bytes, true);
+};
+$("#inspectBtn").onclick = async () => {
+  if (!devices.length){ log("Connect a light box first.","er"); return; }
+  for (const d of devices){
+    log(`— ${d.dev.name||d.dev.id} —`);
+    try {
+      const svcs = await d.dev.gatt.getPrimaryServices();
+      for (const s of svcs){
+        log(`service ${s.uuid}`,"rx");
+        const cs = await s.getCharacteristics().catch(()=>[]);
+        for (const c of cs){ const p=c.properties; log(`   char ${c.uuid}  [${["read","write","writeWithoutResponse","notify","indicate"].filter(k=>p[k]).join(", ")}]`); }
+      }
+    } catch(e){ log("Read services failed: "+e.message,"er"); }
+  }
+};
+$("#copyLog").onclick = async () => {
+  try { await navigator.clipboard.writeText(logEl.innerText); toast("Log copied"); }
+  catch(e){ const r=document.createRange(); r.selectNodeContents(logEl); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast("Log selected. Copy it from the menu."); }
+};
+$("#clearLog").onclick = () => logEl.replaceChildren();
+$("#connectBtn").onclick = connect;
+
+function showBTHelp(fromTap){
+  const el = $("#btBanner");
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  el.replaceChildren();
+  const b = document.createElement("b"); b.textContent = "Bluetooth isn't available in this browser. ";
+  const t = document.createTextNode(ios
+    ? "On iPhone, Safari and Chrome can't talk to Bluetooth lights. Open this page in the free Bluefy browser from the App Store, then tap Connect. The preview and every setting work here too."
+    : "Use Chrome or Edge on Android, Mac or Windows, over https. The preview and every setting still work here.");
+  el.append(b,t); el.hidden = false;
+  if (fromTap) el.scrollIntoView({behavior:"smooth",block:"center"});
+}
+if (!hasBT) showBTHelp(false);
+
+// home-screen icon (PNG drawn at load, iOS needs PNG)
+(function icon(){
+  try {
+    const c = document.createElement("canvas"); c.width=c.height=180; const x=c.getContext("2d");
+    const g=x.createLinearGradient(0,0,0,180); g.addColorStop(0,"#0b0e1f"); g.addColorStop(1,"#1c2147"); x.fillStyle=g; x.fillRect(0,0,180,180);
+    const star=(cx,cy,R,a)=>{ x.fillStyle=`rgba(255,217,138,${a})`; x.beginPath(); for(let i=0;i<8;i++){const r=i%2?R*.28:R; const an=i*Math.PI/4-Math.PI/2; x.lineTo(cx+Math.cos(an)*r,cy+Math.sin(an)*r);} x.closePath(); x.fill(); };
+    star(92,86,48,1); star(140,46,14,.8); star(42,132,10,.6); star(138,140,7,.5);
+    for (let i=0;i<26;i++){ x.fillStyle=`rgba(233,235,255,${Math.random()*.6+.2})`; x.beginPath(); x.arc(Math.random()*180,Math.random()*180,Math.random()*1.4+.4,0,7); x.fill(); }
+    const url = c.toDataURL("image/png");
+    const l = document.createElement("link"); l.rel="apple-touch-icon"; l.href=url; document.head.append(l);
+    const man = {name:"Starlight",short_name:"Starlight",display:"standalone",background_color:"#0b0e1f",theme_color:"#0b0e1f",start_url:location.href.split("#")[0],icons:[{src:url,sizes:"180x180",type:"image/png"}]};
+    const m = document.createElement("link"); m.rel="manifest"; m.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:"application/manifest+json"})); document.head.append(m);
+  } catch(e){}
+})();
+
+// keep the screen awake while twinkling from the phone
+async function wake(){ try { if ("wakeLock" in navigator && S.tw) await navigator.wakeLock.request("screen"); } catch(e){} }
+document.addEventListener("visibilitychange", () => document.visibilityState==="visible" && wake());
+$("#twOn").addEventListener("click", wake);
+
+// init
+$("#powerBtn").setAttribute("aria-pressed", S.on?"true":"false");
+$("#twOn").setAttribute("aria-checked", S.tw?"true":"false");
+markSwatch(); markStyles(); drawWheel(); renderDevices();
+layoutSky(); addEventListener("resize", debounce(layoutSky,150));
+log(hasBT ? "Bluetooth ready. Tap Connect and pick your light box." : "Bluetooth not available in this browser. Preview mode.");
+requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
