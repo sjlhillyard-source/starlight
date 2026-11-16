@@ -336,6 +336,12 @@ function customProto(){
 const devices = []; // {dev, chr, proto, busy, last, tw}
 const hasBT = !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
 let lastError = "";
+/* iPhone without Bluetooth (Safari or a Safari home-screen icon): hand the page to Bluefy.
+   Bluefy can't make home-screen icons itself, so a Safari icon that jumps here is the workaround. */
+const BLUEFY = "bluefy://open?url=" + location.href.split("#")[0];
+if (!hasBT && /iPhone|iPad|iPod/.test(navigator.userAgent)){
+  if (navigator.standalone || /[?&]go\b/.test(location.search)) setTimeout(() => { location.href = BLUEFY; }, 300);
+}
 
 function renderDevices(){
   const box = $("#devices"); box.replaceChildren();
@@ -344,6 +350,10 @@ function renderDevices(){
     p.textContent = lastError ? `Last try failed: ${lastError}` : hasBT ? "No light box connected. Turn the stars on, then tap Connect." : "Preview mode: the sky above shows what your settings will look like.";
     if (lastError) p.style.color = "var(--bad)";
     box.append(p);
+    if (!hasBT && /iPhone|iPad|iPod/.test(navigator.userAgent)){
+      const a = document.createElement("a"); a.href = BLUEFY; a.className = "btn"; a.textContent = "Open in Bluefy to connect";
+      a.style.cssText = "display:inline-block;margin-top:10px;text-decoration:none"; box.append(a);
+    }
   }
   devices.forEach((d,i) => {
     const row = document.createElement("div"); row.className="dev";
